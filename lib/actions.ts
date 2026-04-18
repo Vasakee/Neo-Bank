@@ -8,8 +8,8 @@ import {
   getEncryptedBalanceQuerierFunction,
   getMasterViewingKeyDeriver,
   getUmbraRelayer,
+  getUserAccountQuerierFunction,
 } from "@umbra-privacy/sdk";
-import type { Address } from "@solana/addresses";
 import {
   getUserRegistrationProver,
   getCreateReceiverClaimableUtxoFromPublicBalanceProver,
@@ -18,12 +18,6 @@ import {
 
 const RELAYER = { apiEndpoint: "https://relayer.api.umbraprivacy.com" };
 
-const addr = (s: string) => s as unknown as Address;
-const u64 = (n: bigint) => n as unknown as any;
-const u32 = (n: number) => n as unknown as any;
-
-// Proxy asset provider — routes ZK circuit fetches through our Next.js API
-// to avoid CORS issues with the CloudFront CDN
 async function getProxiedAssetUrls(type: string, variant?: string) {
   const base = "/api/zk-assets";
   const manifest = await fetch(`${base}/manifest.json`).then((r) => r.json());
@@ -35,42 +29,44 @@ async function getProxiedAssetUrls(type: string, variant?: string) {
   };
 }
 
-const proxiedAssetProvider = { getAssetUrls: getProxiedAssetUrls };
-const proxiedDeps = { assetProvider: proxiedAssetProvider } as any;
+const proxiedDeps = { assetProvider: { getAssetUrls: getProxiedAssetUrls } } as any;
+
+// Call SDK functions as `any` to avoid branded-type mismatches at runtime.
+// The SDK validates inputs as plain strings/bigints internally.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const call = (fn: any, ...args: any[]) => fn(...args);
 
 export async function registerAccount(client: any) {
   const zkProver = getUserRegistrationProver(proxiedDeps);
   const register = getUserRegistrationFunction({ client }, { zkProver });
-  return register({ confidential: true, anonymous: true });
+  const result = await register({ confidential: true, anonymous: true });
+  console.log("[registerAccount] confirmed:", result);
+  const query = getUserAccountQuerierFunction({ client });
+  const accountState = await call(query, client.signer.address).catch((e: any) => ({ error: e?.message }));
+  console.log("[registerAccount] on-chain account state:", JSON.stringify(accountState, (_, v) => typeof v === "bigint" ? v.toString() : v));
+  return result;
 }
 
 export async function shieldTokens(client: any, mint: string, amount: bigint) {
+  console.log("[shieldTokens] mint:", mint, "amount:", amount);
   const deposit = getPublicBalanceToEncryptedBalanceDirectDepositorFunction({ client });
-  return deposit(addr(client.signer.address), addr(mint), u64(amount));
+  return call(deposit, client.signer.address, mint, amount);
 }
 
 export async function unshieldTokens(client: any, mint: string, amount: bigint) {
   const withdraw = getEncryptedBalanceToPublicBalanceDirectWithdrawerFunction({ client });
-  return withdraw(addr(client.signer.address), addr(mint), u64(amount));
+  return call(withdraw, client.signer.address, mint, amount);
 }
 
-export async function privateSend(
-  client: any,
-  recipient: string,
-  mint: string,
-  amount: bigint
-) {
+export async function privateSend(client: any, recipient: string, mint: string, amount: bigint) {
   const zkProver = getCreateReceiverClaimableUtxoFromPublicBalanceProver(proxiedDeps);
-  const createUtxo = getPublicBalanceToReceiverClaimableUtxoCreatorFunction(
-    { client },
-    { zkProver }
-  );
-  return createUtxo({ destinationAddress: addr(recipient), mint: addr(mint), amount: u64(amount) });
+  const createUtxo = getPublicBalanceToReceiverClaimableUtxoCreatorFunction({ client }, { zkProver });
+  return call(createUtxo, { destinationAddress: recipient, mint, amount });
 }
 
 export async function scanUtxos(client: any) {
   const scan = getClaimableUtxoScannerFunction({ client });
-  const { received } = await scan(u32(0), u32(0));
+  const { received } = await call(scan, 0, 0);
   return received;
 }
 
@@ -78,20 +74,14 @@ export async function claimUtxos(client: any, utxos: any[]) {
   const zkProver = getClaimReceiverClaimableUtxoIntoEncryptedBalanceProver(proxiedDeps);
   const relayer = getUmbraRelayer(RELAYER);
   const deps: any = { zkProver, relayer };
-  // fetchBatchMerkleProof is wired into the client when indexerApiEndpoint is set
-  if (client.fetchBatchMerkleProof) {
-    deps.fetchBatchMerkleProof = client.fetchBatchMerkleProof;
-  }
-  const claim = getReceiverClaimableUtxoToEncryptedBalanceClaimerFunction(
-    { client },
-    deps
-  );
-  return claim(utxos);
+  if (client.fetchBatchMerkleProof) deps.fetchBatchMerkleProof = client.fetchBatchMerkleProof;
+  const claim = getReceiverClaimableUtxoToEncryptedBalanceClaimerFunction({ client }, deps);
+  return call(claim, utxos);
 }
 
 export async function fetchEncryptedBalances(client: any, mints: string[]): Promise<Map<string, bigint>> {
   const query = getEncryptedBalanceQuerierFunction({ client });
-  const results = await query(mints.map(addr));
+  const results = await call(query, mints);
   const out = new Map<string, bigint>();
   for (const [mint, result] of (results as Map<any, any>).entries()) {
     out.set(mint as string, result.state === "shared" ? BigInt(result.balance) : 0n);
@@ -102,5 +92,6 @@ export async function fetchEncryptedBalances(client: any, mints: string[]): Prom
 export async function exportMasterViewingKey(client: any): Promise<string> {
   const derive = getMasterViewingKeyDeriver({ client });
   const key = await derive();
-  return key.toString(16).padStart(64, "0");
+  const keyBig = typeof key === "bigint" ? key : BigInt((key as any).toString());
+  return keyBig.toString(16).padStart(64, "0");
 }

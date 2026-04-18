@@ -46,7 +46,7 @@ export default function SendPage() {
       <main className="max-w-lg mx-auto px-4 py-10 space-y-6">
         <h1 className="text-2xl font-bold">Private Send</h1>
         <p className="text-gray-400 text-sm">
-          Send tokens via the Umbra mixer. The on-chain link between you and the recipient is completely broken.
+          Send tokens via the GhostFi mixer. The on-chain link between you and the recipient is completely broken.
         </p>
 
         <div className="bg-gray-900 rounded-xl p-6 space-y-4">
@@ -108,7 +108,7 @@ export default function SendPage() {
 
         <div className="bg-gray-900 rounded-xl p-4 text-xs text-gray-500 space-y-1">
           <p>🔒 How it works:</p>
-          <p>Tokens enter the Umbra mixer as a UTXO commitment. A Groth16 ZK proof is generated in your browser. The recipient claims with no on-chain link back to you.</p>
+          <p>Tokens enter the GhostFi mixer as a UTXO commitment. A Groth16 ZK proof is generated in your browser. The recipient claims with no on-chain link back to you.</p>
         </div>
       </main>
     </>

@@ -8,6 +8,8 @@ import { Navbar } from "@/components/Navbar";
 import { ErrorModal } from "@/components/ErrorModal";
 import { formatError } from "@/lib/errors";
 
+type Toast = { id: number; message: string; ok: boolean };
+
 export default function Dashboard() {
   const { connected, publicKey, signTransaction, signMessage } = useWallet();
   const { registered, shieldedBalances, txHistory, setRegistered, setShieldedBalance, addTx } =
@@ -19,9 +21,16 @@ export default function Dashboard() {
   const [errorMsg, setErrorMsg] = useState("");
   const [solBalance, setSolBalance] = useState<number | null>(null);
   const [publicTokenBalances, setPublicTokenBalances] = useState<Record<string, number>>({});
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
   const token = SUPPORTED_TOKENS.find((t) => t.mint === selectedMint)!;
   const network = process.env.NEXT_PUBLIC_NETWORK ?? "mainnet";
+
+  function showToast(message: string, ok: boolean) {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, ok }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
+  }
 
   async function fetchPublicBalances(address: string) {
     const rpc = process.env.NEXT_PUBLIC_RPC_URL!;
@@ -61,6 +70,11 @@ export default function Dashboard() {
     }
     setPublicTokenBalances(balances);
   }
+
+  // Hydrate registered state from localStorage after mount
+  useEffect(() => {
+    if (localStorage.getItem("ghostfi_registered") === "true") setRegistered(true);
+  }, []);
 
   // Fetch SOL + token balances on connect
   useEffect(() => {
@@ -126,21 +140,29 @@ export default function Dashboard() {
       const client = await getUmbraClient();
       await registerAccount(client);
       setRegistered(true);
+      showToast("Account registered successfully!", true);
     } catch (e: any) {
+      showToast("Registration failed: " + formatError(e), false);
       setErrorMsg(formatError(e));
     }
     setLoading("");
   }
 
   async function handleShield() {
+    const amount = BigInt(Math.round(parseFloat(shieldAmt) * 10 ** token.decimals));
+    const available = publicTokenBalances[selectedMint] ?? 0;
+    if (parseFloat(shieldAmt) > available) {
+      showToast(`Insufficient balance. You have ${available} ${token.symbol}`, false);
+      return;
+    }
     setLoading("Shielding...");
     try {
       const client = await getUmbraClient();
-      const amount = BigInt(Math.round(parseFloat(shieldAmt) * 10 ** token.decimals));
       const result = await shieldTokens(client, selectedMint, amount);
       addTx({ type: "Shield", amount, mint: token.symbol, sig: result.queueSignature, ts: Date.now() });
       await refreshBalances();
       setShieldAmt("");
+      showToast(`Shielded ${shieldAmt} ${token.symbol} successfully!`, true);
     } catch (e: any) {
       setErrorMsg(formatError(e));
     }
@@ -176,6 +198,19 @@ export default function Dashboard() {
   return (
     <>
       <Navbar />
+      {/* Toast notifications */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={`px-4 py-3 rounded-lg text-sm font-medium shadow-lg text-white transition-all ${
+              t.ok ? "bg-green-600" : "bg-red-600"
+            }`}
+          >
+            {t.ok ? "✓" : "✗"} {t.message}
+          </div>
+        ))}
+      </div>
       {errorMsg && <ErrorModal error={errorMsg} onClose={() => setErrorMsg("")} />}
       <main className="max-w-2xl mx-auto px-4 py-10 space-y-8">
         {/* Balance Card */}
@@ -235,7 +270,7 @@ export default function Dashboard() {
         {!registered && (
           <div className="bg-gray-900 rounded-xl p-5 space-y-3">
             <p className="text-sm text-gray-300">
-              First time? Register your Umbra account to enable private balances.
+              First time? Register your GhostFi account to enable private balances.
             </p>
             <button
               onClick={handleRegister}
@@ -261,7 +296,7 @@ export default function Dashboard() {
             />
             <button
               onClick={handleShield}
-              disabled={!!loading || !shieldAmt || !publicKey}
+              disabled={!!loading || !shieldAmt || !publicKey || !registered}
               className="w-full bg-brand hover:bg-brand-dark py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
             >
               {loading === "Shielding..." ? "Shielding..." : "Shield →"}
@@ -280,7 +315,7 @@ export default function Dashboard() {
             />
             <button
               onClick={handleUnshield}
-              disabled={!!loading || !unshieldAmt || !publicKey}
+              disabled={!!loading || !unshieldAmt || !publicKey || !registered}
               className="w-full bg-gray-700 hover:bg-gray-600 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
             >
               {loading === "Unshielding..." ? "Unshielding..." : "← Unshield"}

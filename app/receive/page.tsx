@@ -55,7 +55,7 @@ export default function ReceivePage() {
         <div className="bg-gray-900 rounded-xl p-5 space-y-2">
           <p className="text-xs text-gray-400">Your Solana Address</p>
           <p className="font-mono text-sm break-all text-gray-200">{publicKey?.toBase58() ?? "—"}</p>
-          <p className="text-xs text-gray-500">Share this address to receive private transfers via the Umbra mixer.</p>
+          <p className="text-xs text-gray-500">Share this address to receive private transfers via the GhostFi mixer.</p>
         </div>
 
         <div className="bg-gray-900 rounded-xl p-5 space-y-4">
@@ -74,12 +74,15 @@ export default function ReceivePage() {
           {pendingUtxos.length > 0 && (
             <>
               <div className="space-y-2">
-                {pendingUtxos.map((u, i) => (
-                  <div key={i} className="flex justify-between text-sm bg-gray-800 rounded-lg px-3 py-2">
-                    <span className="text-gray-300">UTXO #{i + 1}</span>
-                    <span>{(Number(u.amount ?? 0) / 1e6).toFixed(2)} USDC</span>
-                  </div>
-                ))}
+                {pendingUtxos.map((u, i) => {
+                  const token = SUPPORTED_TOKENS.find((t) => t.mint === u.mint) ?? SUPPORTED_TOKENS[0];
+                  return (
+                    <div key={i} className="flex justify-between text-sm bg-gray-800 rounded-lg px-3 py-2">
+                      <span className="text-gray-300">UTXO #{i + 1}</span>
+                      <span>{(Number(u.amount ?? 0) / 10 ** token.decimals).toFixed(2)} {token.symbol}</span>
+                    </div>
+                  );
+                })}
               </div>
               <button
                 onClick={handleClaim}

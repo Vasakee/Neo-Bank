@@ -19,7 +19,7 @@ export function Navbar() {
   return (
     <nav className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
       <Link href="/dashboard" className="text-xl font-bold">
-        <span className="text-brand">Umbra</span> Bank
+        <span className="text-brand">Ghost</span>Fi
       </Link>
       <div className="flex gap-6 text-sm items-center">
         {NAV.map((n) => (

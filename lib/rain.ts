@@ -8,7 +8,7 @@ const MOCK_TXS = [
   { id: "t1", merchant: "Netflix", amount: 15.99, currency: "USD", date: "2026-04-13", category: "entertainment" },
   { id: "t2", merchant: "Uber Eats", amount: 32.50, currency: "USD", date: "2026-04-12", category: "food" },
   { id: "t3", merchant: "Amazon", amount: 89.00, currency: "USD", date: "2026-04-10", category: "shopping" },
-  { id: "t4", merchant: "ShieldPay Top-up", amount: 200.00, currency: "USD", date: "2026-04-09", category: "topup" },
+  { id: "t4", merchant: "GhostFi Top-up", amount: 200.00, currency: "USD", date: "2026-04-09", category: "topup" },
 ];
 
 async function rainFetch(path: string, options?: RequestInit) {

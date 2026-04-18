@@ -1,5 +1,5 @@
 {
-  "name": "umbra-neobank",
+  "name": "ghostfi",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@solana/kit": "^6.8.0",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-phantom": "*",
     "@solana/wallet-adapter-react": "^0.15.35",

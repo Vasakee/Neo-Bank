@@ -1,6 +1,8 @@
 import { getUmbraClient } from "@umbra-privacy/sdk";
-import { VersionedTransaction, VersionedMessage } from "@solana/web3.js";
+import { getTransactionEncoder, getTransactionDecoder } from "@solana/kit";
+import { VersionedTransaction } from "@solana/web3.js";
 import type { Address } from "@solana/addresses";
+import type { SignatureBytes } from "@solana/keys";
 
 let _client: Awaited<ReturnType<typeof getUmbraClient>> | null = null;
 let _signerAddress: string | null = null;
@@ -16,21 +18,26 @@ function buildSigner(
     address: address as Address,
 
     async signTransaction(transaction: any) {
-      // transaction.messageBytes is the raw serialized v0 message (starts with 0x80).
-      // VersionedMessage.deserialize parses it; new VersionedTransaction wraps it
-      // with empty signatures so the wallet can sign it properly.
-      const message = VersionedMessage.deserialize(
-        // Ensure we have a plain Uint8Array copy, not a subarray view
-        transaction.messageBytes instanceof Uint8Array
-          ? transaction.messageBytes.slice()
-          : new Uint8Array(transaction.messageBytes)
-      );
-      const vTx = new VersionedTransaction(message);
+      console.log("[signTransaction] incoming signatures:", Object.keys(transaction.signatures ?? {}));
+      console.log("[signTransaction] messageBytes length:", transaction.messageBytes?.length);
+
+      const encoder = getTransactionEncoder();
+      const decoder = getTransactionDecoder();
+
+      const wireBytes = encoder.encode(transaction);
+      const vTx = VersionedTransaction.deserialize(wireBytes as Uint8Array);
+
+      console.log("[signTransaction] web3.js staticAccountKeys:", vTx.message.staticAccountKeys.map(k => k.toBase58()));
+      console.log("[signTransaction] web3.js numRequiredSignatures:", vTx.message.header.numRequiredSignatures);
+      console.log("[signTransaction] web3.js existing signatures:", vTx.signatures.map(s => Buffer.from(s).toString("hex").slice(0, 16) + "..."));
+
       const signed = await signTransaction(vTx);
-      // signed.signatures[0] is the fee payer (first required signer) signature
+      const signedWireBytes = signed.serialize();
+      const decoded = decoder.decode(signedWireBytes as Uint8Array);
+
       return {
         ...transaction,
-        signatures: { ...transaction.signatures, [address]: signed.signatures[0] },
+        signatures: { ...transaction.signatures, ...decoded.signatures },
       };
     },
 
@@ -40,7 +47,12 @@ function buildSigner(
 
     async signMessage(message: Uint8Array) {
       const signature = await signMessage(message);
-      return { signer: address as Address, message, signature };
+      console.log("[signMessage] signature type:", typeof signature, "length:", signature?.length, "isUint8Array:", signature instanceof Uint8Array);
+      // Solflare sometimes returns { signature: Uint8Array } instead of raw Uint8Array
+      const sigBytes = (signature as any)?.signature instanceof Uint8Array
+        ? (signature as any).signature
+        : signature;
+      return { signer: address as Address, message, signature: sigBytes };
     },
   };
 }
@@ -60,7 +72,7 @@ export async function getClient(
     rpcUrl: process.env.NEXT_PUBLIC_RPC_URL!,
     rpcSubscriptionsUrl: process.env.NEXT_PUBLIC_RPC_WS_URL!,
     indexerApiEndpoint: "https://utxo-indexer.api.umbraprivacy.com",
-    deferMasterSeedSignature: true,
+    deferMasterSeedSignature: false,
   });
   _signerAddress = address;
   _signTxRef = signTransaction;

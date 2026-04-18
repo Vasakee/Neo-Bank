@@ -17,10 +17,10 @@ export default function Home() {
     <main className="min-h-screen flex flex-col items-center justify-center gap-8 px-4">
       <div className="text-center space-y-3">
         <div className="text-5xl font-bold tracking-tight">
-          <span className="text-brand">Umbra</span> Bank
+          <span className="text-brand">Ghost</span>Fi
         </div>
         <p className="text-gray-400 text-lg max-w-sm">
-          Your balance. Your business. Private banking on Solana.
+          Your balance. Invisible. Private banking on Solana.
         </p>
       </div>
       <WalletMultiButton className="!bg-brand hover:!bg-brand-dark !rounded-xl !py-3 !px-8 !text-base" />

@@ -34,7 +34,10 @@ export const useBankStore = create<BankStore>((set) => ({
   cardLast4: ls("cardLast4"),
   cardExpiry: ls("cardExpiry"),
   cardBalance: Number(ls("cardBalance") ?? 0),
-  setRegistered: (registered) => set({ registered }),
+  setRegistered: (registered) => {
+    if (typeof window !== "undefined") localStorage.setItem("ghostfi_registered", String(registered));
+    set({ registered });
+  },
   setShieldedBalance: (mint, amount) =>
     set((s) => ({ shieldedBalances: { ...s.shieldedBalances, [mint]: amount } })),
   setPendingUtxos: (pendingUtxos) => set({ pendingUtxos }),

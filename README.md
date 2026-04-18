@@ -1,8 +1,8 @@
-# Umbra Neobank
+# GhostFi
 
 A private-by-default banking interface on Solana, powered by the [Umbra SDK](https://sdk.umbraprivacy.com).
 
-> Your balance. Your business. No one else's.
+> Spend freely. Leave no trace.
 
 ---
 
@@ -12,7 +12,7 @@ Every transaction on Solana is publicly readable. Anyone can look up your wallet
 
 ## The Solution
 
-Umbra Neobank gives you a banking interface where your balance is **private by default**. Powered by Umbra's privacy infrastructure:
+GhostFi gives you a banking interface where your balance is **private by default**. Powered by Umbra's privacy infrastructure:
 
 - Encrypted balances via Arcium MPC
 - Anonymous transfers via a UTXO mixer with Groth16 ZK proofs
@@ -25,7 +25,7 @@ Umbra Neobank gives you a banking interface where your balance is **private by d
 | Feature | Description |
 |---|---|
 | 🔒 Private Balance | Shield USDC/USDT into an encrypted on-chain balance only you can see |
-| 📤 Private Send | Send tokens via the Umbra mixer — no on-chain link between sender and recipient |
+| 📤 Private Send | Send tokens via the GhostFi mixer — no on-chain link between sender and recipient |
 | 📥 Receive | Scan for incoming UTXOs and claim them into your private balance |
 | 📋 Compliance | Export your viewing key for selective disclosure to auditors or accountants |
 
@@ -104,7 +104,7 @@ pnpm start
 ## Usage
 
 1. Connect your Phantom or Solflare wallet
-2. Click **Register Account** (one-time, sets up your Umbra identity on-chain)
+2. Click **Register Account** (one-time, sets up your GhostFi identity on-chain)
 3. **Shield** USDC from your public wallet into your private balance
 4. **Send** tokens privately to any Solana address via the mixer
 5. **Receive** — scan for incoming UTXOs and claim them

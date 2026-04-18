@@ -45,7 +45,7 @@ function CardFace({ last4, expiry, name, revealed, cardNumber, cvv, frozen }: {
         {/* row 1: logo + chip */}
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-white font-bold text-base tracking-wide leading-none">ShieldPay</p>
+            <p className="text-white font-bold text-base tracking-wide leading-none">GhostFi</p>
             <p className="text-purple-300 text-[10px] tracking-widest mt-0.5">VIRTUAL CARD</p>
           </div>
           {/* EMV chip */}
@@ -196,7 +196,7 @@ function TopUpModal({ cardId, shieldedUsdc, cardBalance, onClose, onSuccess }: {
               <CheckCircle className="text-green-400 w-7 h-7" />
             </div>
             <p className="font-bold text-lg">Card topped up privately</p>
-            <p className="text-gray-400 text-sm">Top-ups are confidential on-chain via Umbra</p>
+            <p className="text-gray-400 text-sm">Top-ups are confidential on-chain via GhostFi</p>
             <button onClick={onClose} className="w-full bg-brand py-2.5 rounded-xl text-sm font-semibold mt-2">Done</button>
           </div>
         ) : (
@@ -231,7 +231,7 @@ function TopUpModal({ cardId, shieldedUsdc, cardBalance, onClose, onSuccess }: {
 
             <div className="flex items-center gap-2 text-xs text-purple-400 bg-purple-900/20 rounded-lg px-3 py-2">
               <span>🔒</span>
-              <span>Top-ups are confidential on-chain via Umbra</span>
+              <span>Top-ups are confidential on-chain via GhostFi</span>
             </div>
 
             <button onClick={handleTopUp} disabled={loading || !amt || amt <= 0 || amt > shieldedUsdc}
@@ -398,7 +398,7 @@ export default function CardPage() {
                     <div>
                       <p className="text-sm font-medium leading-tight">{tx.merchant}</p>
                       <p className={`text-xs mt-0.5 ${tx.category === "topup" ? "text-purple-400" : "text-gray-500"}`}>
-                        {tx.category === "topup" ? "Funded privately from ShieldPay" : tx.date}
+                        {tx.category === "topup" ? "Funded privately from GhostFi" : tx.date}
                       </p>
                     </div>
                   </div>

@@ -3,7 +3,7 @@ import "./globals.css";
 import { WalletProviderWrapper } from "@/components/WalletProvider";
 
 export const metadata: Metadata = {
-  title: "Umbra Neobank",
+  title: "GhostFi",
   description: "Private banking on Solana",
 };
 
