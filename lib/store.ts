@@ -11,11 +11,12 @@ interface BankStore {
   cardLast4: string | null;
   cardExpiry: string | null;
   cardBalance: number;
+  cardholderName: string | null;
   setRegistered: (v: boolean) => void;
   setShieldedBalance: (mint: string, amount: bigint) => void;
   setPendingUtxos: (utxos: any[]) => void;
   addTx: (tx: BankStore["txHistory"][0]) => void;
-  setCard: (card: { cardId: string; last4: string; expiry: string }) => void;
+  setCard: (card: { cardId: string; last4: string; expiry: string; name: string }) => void;
   setCardStatus: (status: BankStore["cardStatus"]) => void;
   setCardBalance: (balance: number) => void;
 }
@@ -34,6 +35,7 @@ export const useBankStore = create<BankStore>((set) => ({
   cardLast4: ls("cardLast4"),
   cardExpiry: ls("cardExpiry"),
   cardBalance: Number(ls("cardBalance") ?? 0),
+  cardholderName: ls("cardholderName"),
   setRegistered: (registered) => {
     if (typeof window !== "undefined") localStorage.setItem("ghostfi_registered", String(registered));
     set({ registered });
@@ -42,12 +44,13 @@ export const useBankStore = create<BankStore>((set) => ({
     set((s) => ({ shieldedBalances: { ...s.shieldedBalances, [mint]: amount } })),
   setPendingUtxos: (pendingUtxos) => set({ pendingUtxos }),
   addTx: (tx) => set((s) => ({ txHistory: [tx, ...s.txHistory] })),
-  setCard: ({ cardId, last4, expiry }) => {
+  setCard: ({ cardId, last4, expiry, name }) => {
     localStorage.setItem("cardId", cardId);
     localStorage.setItem("cardLast4", last4);
     localStorage.setItem("cardExpiry", expiry);
     localStorage.setItem("cardStatus", "active");
-    set({ cardId, cardLast4: last4, cardExpiry: expiry, cardStatus: "active" });
+    localStorage.setItem("cardholderName", name);
+    set({ cardId, cardLast4: last4, cardExpiry: expiry, cardStatus: "active", cardholderName: name });
   },
   setCardStatus: (cardStatus) => {
     localStorage.setItem("cardStatus", cardStatus);

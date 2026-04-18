@@ -101,7 +101,7 @@ function IssueFlow({ onIssued }: { onIssued: () => void }) {
     setStep("issuing");
     try {
       const result = await rainClient.issue(publicKey?.toBase58() ?? "anon", name, email);
-      setCard({ cardId: result.cardId, last4: result.last4, expiry: result.expiry });
+      setCard({ cardId: result.cardId, last4: result.last4, expiry: result.expiry, name });
       setStep("done");
       confetti({ particleCount: 140, spread: 90, origin: { y: 0.55 } });
       setTimeout(onIssued, 2200);
@@ -249,7 +249,7 @@ function TopUpModal({ cardId, shieldedUsdc, cardBalance, onClose, onSuccess }: {
 
 export default function CardPage() {
   const { publicKey } = useWallet();
-  const { cardId, cardStatus, cardLast4, cardExpiry, cardBalance,
+  const { cardId, cardStatus, cardLast4, cardExpiry, cardBalance, cardholderName,
           shieldedBalances, setCardStatus, setCardBalance } = useBankStore();
 
   const [revealed, setRevealed] = useState(false);
@@ -258,7 +258,6 @@ export default function CardPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [showTopUp, setShowTopUp] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [cardholderName, setCardholderName] = useState("Anonymous");
   const [issued, setIssued] = useState(cardStatus !== "not_issued");
   const [copied, setCopied] = useState(false);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -270,10 +269,6 @@ export default function CardPage() {
     rainClient.balance(cardId).then(r => setCardBalance(r.balance)).catch(() => {});
     rainClient.transactions(cardId).then(r => setTransactions(r.transactions)).catch(() => {});
   }, [cardId]);
-
-  useEffect(() => {
-    if (publicKey) setCardholderName(publicKey.toBase58().slice(0, 8) + "…");
-  }, [publicKey?.toBase58()]);
 
   async function handleReveal() {
     if (revealed) { setRevealed(false); return; }
@@ -334,7 +329,7 @@ export default function CardPage() {
         {/* card */}
         <div className={`transition-all duration-300 ${cardStatus === "frozen" ? "opacity-60 saturate-50" : ""}`}>
           <CardFace last4={cardLast4 ?? "••••"} expiry={cardExpiry ?? "••/••"}
-            name={cardholderName} revealed={revealed} cardNumber={cardNumber} cvv={cvv}
+            name={cardholderName ?? "—"} revealed={revealed} cardNumber={cardNumber} cvv={cvv}
             frozen={cardStatus === "frozen"} />
           {cardStatus === "frozen" && (
             <p className="text-center text-blue-400 text-xs mt-2">❄ Card is frozen</p>
