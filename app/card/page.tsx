@@ -170,42 +170,50 @@ function TopUpModal({ cardId, shieldedUsdc, cardBalance, onClose, onSuccess }: {
   cardId: string; shieldedUsdc: number; cardBalance: number;
   onClose: () => void; onSuccess: (newBal: number) => void;
 }) {
-  const [amount, setAmount] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState("");
-  const amt = parseFloat(amount) || 0;
-
-  async function handleTopUp() {
-    if (!amt || amt > shieldedUsdc) return;
-    setLoading(true);
-    try {
-      await rainClient.topup(cardId, amt);
-      onSuccess(cardBalance + amt);
-      setDone(true);
-    } catch (e: any) { setError(formatError(e)); }
-    setLoading(false);
-  }
+  const [tab, setTab] = useState<"how" | "manual">("how");
 
   return (
     <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-4">
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-sm space-y-5">
-        {done ? (
-          <div className="text-center space-y-3 py-6">
-            <div className="w-14 h-14 bg-green-900/40 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle className="text-green-400 w-7 h-7" />
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-lg">Top up card</h3>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition text-lg leading-none">×</button>
+        </div>
+
+        {/* tabs */}
+        <div className="flex gap-2">
+          {(["how", "manual"] as const).map((t) => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition ${tab === t ? "bg-brand text-white" : "bg-gray-800 text-gray-400"}`}>
+              {t === "how" ? "How it works" : "Fund my card"}
+            </button>
+          ))}
+        </div>
+
+        {tab === "how" ? (
+          <div className="space-y-3 text-sm text-gray-300">
+            <p className="text-xs text-gray-500 uppercase tracking-wider">Why can't it be automatic?</p>
+            <p>Your GhostFi balance is in <span className="text-white font-medium">USDC</span> (crypto). Your card spends <span className="text-white font-medium">USD</span> (real dollars). Converting between them requires a licensed money service — something we're working on adding.</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wider mt-4">In the meantime — 4 simple steps</p>
+            <ol className="space-y-3">
+              {[
+                { n: "1", text: "Go to your Dashboard and Unshield the USDC you want to spend back to your wallet." },
+                { n: "2", text: "Send that USDC to Coinbase, Binance, or any exchange you use." },
+                { n: "3", text: "Sell the USDC for USD and withdraw to your bank account." },
+                { n: "4", text: "Use your bank to load your Lithic card (via the Lithic dashboard or bank transfer)." },
+              ].map(({ n, text }) => (
+                <li key={n} className="flex gap-3">
+                  <span className="w-6 h-6 rounded-full bg-brand/20 text-brand text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{n}</span>
+                  <span className="text-gray-300 text-sm">{text}</span>
+                </li>
+              ))}
+            </ol>
+            <div className="bg-purple-900/20 border border-purple-800/40 rounded-xl px-3 py-2.5 text-xs text-purple-300 mt-2">
+              🔒 Your GhostFi balance stays private throughout — only the unshield step touches your public wallet.
             </div>
-            <p className="font-bold text-lg">Card topped up privately</p>
-            <p className="text-gray-400 text-sm">Top-ups are confidential on-chain via GhostFi</p>
-            <button onClick={onClose} className="w-full bg-brand py-2.5 rounded-xl text-sm font-semibold mt-2">Done</button>
           </div>
         ) : (
-          <>
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-lg">Top up card</h3>
-              <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition text-lg leading-none">×</button>
-            </div>
-
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-gray-800 rounded-xl p-3">
                 <p className="text-xs text-gray-500 mb-1">Shielded balance</p>
@@ -213,32 +221,14 @@ function TopUpModal({ cardId, shieldedUsdc, cardBalance, onClose, onSuccess }: {
               </div>
               <div className="bg-gray-800 rounded-xl p-3">
                 <p className="text-xs text-gray-500 mb-1">Card balance</p>
-                <p className="font-semibold text-sm">${fmt(cardBalance)} <span className="text-gray-500 font-normal">USDC</span></p>
+                <p className="font-semibold text-sm">${fmt(cardBalance)} <span className="text-gray-500 font-normal">USD</span></p>
               </div>
             </div>
-
-            {error && <p className="text-red-400 text-sm bg-red-900/20 rounded-lg px-3 py-2">{error}</p>}
-
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg font-mono">$</span>
-              <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
-                placeholder="0.00" min="0" max={shieldedUsdc}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl pl-8 pr-16 py-3 text-xl font-mono outline-none focus:border-brand transition" />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">USDC</span>
-            </div>
-
-            {amt > shieldedUsdc && <p className="text-red-400 text-xs">Exceeds shielded balance</p>}
-
-            <div className="flex items-center gap-2 text-xs text-purple-400 bg-purple-900/20 rounded-lg px-3 py-2">
-              <span>🔒</span>
-              <span>Top-ups are confidential on-chain via GhostFi</span>
-            </div>
-
-            <button onClick={handleTopUp} disabled={loading || !amt || amt <= 0 || amt > shieldedUsdc}
-              className="w-full bg-brand hover:bg-brand-dark py-3 rounded-xl font-semibold disabled:opacity-40 transition">
-              {loading ? "Processing…" : `Top Up $${fmt(amt)}`}
+            <p className="text-sm text-gray-400">Follow the steps in <button onClick={() => setTab("how")} className="text-brand underline">How it works</button> to fund your card, then come back here to check your updated balance.</p>
+            <button onClick={onClose} className="w-full bg-gray-800 hover:bg-gray-700 py-3 rounded-xl text-sm font-semibold transition">
+              Got it
             </button>
-          </>
+          </div>
         )}
       </div>
     </div>
