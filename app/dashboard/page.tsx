@@ -1,8 +1,9 @@
 "use client";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useEffect, useState } from "react";
-import { getClient, SUPPORTED_TOKENS } from "@/lib/umbra";
+import { getClient, SUPPORTED_TOKENS, PUSD_MINT } from "@/lib/umbra";
 import { registerAccount, shieldTokens, unshieldTokens, fetchEncryptedBalances } from "@/lib/actions";
+import { getPusdQuote, buildPusdSwapTx, executePusdSwap } from "@/lib/pusd";
 import { useBankStore } from "@/lib/store";
 import { Navbar } from "@/components/Navbar";
 import { ErrorModal } from "@/components/ErrorModal";
@@ -22,6 +23,12 @@ export default function Dashboard() {
   const [solBalance, setSolBalance] = useState<number | null>(null);
   const [publicTokenBalances, setPublicTokenBalances] = useState<Record<string, number>>({});
   const [toasts, setToasts] = useState<Toast[]>([]);
+
+  // PUSD swap state
+  const [swapFromMint, setSwapFromMint] = useState(SUPPORTED_TOKENS[0].mint);
+  const [swapAmt, setSwapAmt] = useState("");
+  const [swapQuote, setSwapQuote] = useState<{ outAmount: string; priceImpactPct: string } | null>(null);
+  const [swapLoading, setSwapLoading] = useState("");
 
   const token = SUPPORTED_TOKENS.find((t) => t.mint === selectedMint)!;
   const network = process.env.NEXT_PUBLIC_NETWORK ?? "mainnet";
@@ -184,6 +191,38 @@ export default function Dashboard() {
     setLoading("");
   }
 
+  async function handleGetSwapQuote() {
+    if (!swapAmt || parseFloat(swapAmt) <= 0) return;
+    setSwapLoading("Fetching quote...");
+    try {
+      const amountLamports = Math.round(parseFloat(swapAmt) * 1e6);
+      const quote = await getPusdQuote(swapFromMint, amountLamports);
+      setSwapQuote({ outAmount: quote.outAmount, priceImpactPct: quote.priceImpactPct });
+    } catch (e: any) {
+      setErrorMsg(formatError(e));
+    }
+    setSwapLoading("");
+  }
+
+  async function handleSwapToPusd() {
+    if (!swapQuote || !publicKey || !signTransaction) return;
+    setSwapLoading("Swapping...");
+    try {
+      const amountLamports = Math.round(parseFloat(swapAmt) * 1e6);
+      const quote = await getPusdQuote(swapFromMint, amountLamports);
+      const tx = await buildPusdSwapTx(quote, publicKey.toBase58());
+      const sig = await executePusdSwap(tx, signTransaction as any, process.env.NEXT_PUBLIC_RPC_URL!);
+      addTx({ type: "Swap→PUSD", amount: BigInt(quote.outAmount), mint: "PUSD", sig, ts: Date.now() });
+      await fetchPublicBalances(publicKey.toBase58());
+      setSwapAmt("");
+      setSwapQuote(null);
+      showToast(`Swapped to ${(Number(quote.outAmount) / 1e6).toFixed(2)} PUSD!`, true);
+    } catch (e: any) {
+      setErrorMsg(formatError(e));
+    }
+    setSwapLoading("");
+  }
+
   if (!connected) {
     return (
       <>
@@ -234,8 +273,82 @@ export default function Dashboard() {
               }`}
             >
               {t.symbol}
+              {"tag" in t && (
+                <span className="ml-1.5 text-[10px] bg-green-900 text-green-400 px-1.5 py-0.5 rounded-full">
+                  {(t as any).tag}
+                </span>
+              )}
             </button>
           ))}
+        </div>
+
+        {/* PUSD Swap Widget */}
+        <div className="bg-gray-900 rounded-xl p-5 space-y-4 border border-green-900/40">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-sm">Get PUSD</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Swap USDC/USDT → Palm USD — no freeze, no blacklist
+              </p>
+            </div>
+            <span className="text-[10px] bg-green-900 text-green-400 px-2 py-1 rounded-full font-medium">
+              non-freezable
+            </span>
+          </div>
+
+          <div className="flex gap-2">
+            {SUPPORTED_TOKENS.filter((t) => t.symbol !== "PUSD").map((t) => (
+              <button
+                key={t.mint}
+                onClick={() => { setSwapFromMint(t.mint); setSwapQuote(null); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                  swapFromMint === t.mint ? "bg-brand text-white" : "bg-gray-800 text-gray-400"
+                }`}
+              >
+                {t.symbol}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex gap-2">
+            <input
+              type="number"
+              placeholder="Amount"
+              value={swapAmt}
+              onChange={(e) => { setSwapAmt(e.target.value); setSwapQuote(null); }}
+              className="flex-1 bg-gray-800 rounded-lg px-3 py-2 text-sm outline-none"
+            />
+            <button
+              onClick={handleGetSwapQuote}
+              disabled={!!swapLoading || !swapAmt}
+              className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-xs font-semibold disabled:opacity-50"
+            >
+              {swapLoading === "Fetching quote..." ? "..." : "Quote"}
+            </button>
+          </div>
+
+          {swapQuote && (
+            <div className="bg-gray-800 rounded-lg px-4 py-3 text-xs space-y-1">
+              <div className="flex justify-between text-gray-300">
+                <span>You receive</span>
+                <span className="text-green-400 font-semibold">
+                  {(Number(swapQuote.outAmount) / 1e6).toFixed(4)} PUSD
+                </span>
+              </div>
+              <div className="flex justify-between text-gray-500">
+                <span>Price impact</span>
+                <span>{parseFloat(swapQuote.priceImpactPct).toFixed(3)}%</span>
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={handleSwapToPusd}
+            disabled={!!swapLoading || !swapQuote || !publicKey}
+            className="w-full bg-green-700 hover:bg-green-600 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
+          >
+            {swapLoading === "Swapping..." ? "Swapping..." : "Swap → PUSD 🌴"}
+          </button>
         </div>
 
         {/* SOL balance + devnet airdrop */}
