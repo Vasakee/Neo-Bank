@@ -1,8 +1,6 @@
 import { getUmbraClient } from "@umbra-privacy/sdk";
 import { getTransactionEncoder, getTransactionDecoder } from "@solana/kit";
 import { VersionedTransaction } from "@solana/web3.js";
-import type { Address } from "@solana/addresses";
-import type { SignatureBytes } from "@solana/keys";
 
 let _client: Awaited<ReturnType<typeof getUmbraClient>> | null = null;
 let _signerAddress: string | null = null;
@@ -15,7 +13,7 @@ function buildSigner(
   signMessage: (msg: Uint8Array) => Promise<Uint8Array>
 ) {
   return {
-    address: address as Address,
+    address: address as any,
 
     async signTransaction(transaction: any) {
       console.log("[signTransaction] incoming signatures:", Object.keys(transaction.signatures ?? {}));
@@ -52,7 +50,7 @@ function buildSigner(
       const sigBytes = (signature as any)?.signature instanceof Uint8Array
         ? (signature as any).signature
         : signature;
-      return { signer: address as Address, message, signature: sigBytes };
+      return { signer: address as any, message, signature: sigBytes };
     },
   };
 }
