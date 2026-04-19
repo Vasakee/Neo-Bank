@@ -17,6 +17,7 @@
     "@solana/web3.js": "^1.95.3",
     "@umbra-privacy/sdk": "latest",
     "@umbra-privacy/web-zk-prover": "latest",
+    "@wallet-standard/app": "^1.1.0",
     "canvas-confetti": "^1.9.4",
     "lucide-react": "^1.8.0",
     "next": "14.2.5",
