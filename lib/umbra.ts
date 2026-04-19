@@ -1,5 +1,5 @@
 import { getUmbraClient } from "@umbra-privacy/sdk";
-import { getTransactionEncoder, getTransactionDecoder } from "@solana/kit";
+import { getTransactionEncoder } from "@solana/kit";
 import { VersionedTransaction } from "@solana/web3.js";
 
 let _client: Awaited<ReturnType<typeof getUmbraClient>> | null = null;
@@ -16,27 +16,22 @@ function buildSigner(
     address: address as any,
 
     async signTransaction(transaction: any) {
-      console.log("[signTransaction] incoming signatures:", Object.keys(transaction.signatures ?? {}));
-      console.log("[signTransaction] messageBytes length:", transaction.messageBytes?.length);
-
       const encoder = getTransactionEncoder();
-      const decoder = getTransactionDecoder();
-
       const wireBytes = encoder.encode(transaction);
       const vTx = VersionedTransaction.deserialize(wireBytes as Uint8Array);
 
-      console.log("[signTransaction] web3.js staticAccountKeys:", vTx.message.staticAccountKeys.map(k => k.toBase58()));
-      console.log("[signTransaction] web3.js numRequiredSignatures:", vTx.message.header.numRequiredSignatures);
-      console.log("[signTransaction] web3.js existing signatures:", vTx.signatures.map(s => Buffer.from(s).toString("hex").slice(0, 16) + "..."));
-
       const signed = await signTransaction(vTx);
-      const signedWireBytes = signed.serialize();
-      const decoded = decoder.decode(signedWireBytes as Uint8Array);
 
-      return {
-        ...transaction,
-        signatures: { ...transaction.signatures, ...decoded.signatures },
-      };
+      // Map signatures back using the account keys as base58 string keys
+      const updatedSignatures = { ...transaction.signatures };
+      vTx.message.staticAccountKeys.forEach((key, i) => {
+        const sig = signed.signatures[i];
+        if (sig && sig.some((b: number) => b !== 0)) {
+          updatedSignatures[key.toBase58()] = sig;
+        }
+      });
+
+      return { ...transaction, signatures: updatedSignatures };
     },
 
     async signTransactions(transactions: any[]) {
