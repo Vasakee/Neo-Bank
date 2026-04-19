@@ -72,6 +72,8 @@ function buildFallbackSigner(
       const vTx = new VersionedTransaction(VersionedMessage.deserialize(messageBytes));
       const signed = await signTransaction(vTx);
       const sig = signed.signatures[0];
+      console.log("[signTx] sig[0]:", sig ? Buffer.from(sig).toString("hex").slice(0, 32) + "..." : "null/empty");
+      console.log("[signTx] sig all zeros:", sig?.every((b: number) => b === 0));
       if (!sig || sig.every((b: number) => b === 0)) throw new Error("Wallet returned empty signature");
       return { ...transaction, signatures: { ...transaction.signatures, [address]: sig } };
     },
