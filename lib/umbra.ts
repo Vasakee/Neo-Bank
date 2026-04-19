@@ -53,6 +53,15 @@ function buildFallbackSigner(
   return {
     address: address as any,
     async signTransaction(transaction: any) {
+      // DEBUG — remove after fixing
+      console.log("[signTx] keys:", Object.keys(transaction));
+      console.log("[signTx] full object:", JSON.stringify(
+        transaction,
+        (_, v) => v instanceof Uint8Array ? `Uint8Array(${v.length})` :
+                  typeof v === "bigint" ? v.toString() : v,
+        2
+      ));
+
       const messageBytes: Uint8Array =
         transaction.messageBytes ??
         transaction.message?.serialize() ??
