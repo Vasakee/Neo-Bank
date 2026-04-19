@@ -1,5 +1,5 @@
 import { getUmbraClient } from "@umbra-privacy/sdk";
-import { getTransactionEncoder } from "@solana/kit";
+
 import { VersionedTransaction } from "@solana/web3.js";
 
 let _client: Awaited<ReturnType<typeof getUmbraClient>> | null = null;
@@ -16,22 +16,26 @@ function buildSigner(
     address: address as any,
 
     async signTransaction(transaction: any) {
-      const encoder = getTransactionEncoder();
-      const wireBytes = encoder.encode(transaction);
-      const vTx = VersionedTransaction.deserialize(wireBytes as Uint8Array);
+      const messageBytes: Uint8Array =
+        transaction.messageBytes ??
+        transaction.message?.serialize() ??
+        (() => { throw new Error("Cannot extract message bytes from transaction"); })();
+
+      const { VersionedMessage } = await import("@solana/web3.js");
+      const message = VersionedMessage.deserialize(messageBytes);
+      const vTx = new VersionedTransaction(message);
 
       const signed = await signTransaction(vTx);
 
-      // Map signatures back using the account keys as base58 string keys
-      const updatedSignatures = { ...transaction.signatures };
-      vTx.message.staticAccountKeys.forEach((key, i) => {
-        const sig = signed.signatures[i];
-        if (sig && sig.some((b: number) => b !== 0)) {
-          updatedSignatures[key.toBase58()] = sig;
-        }
-      });
+      const sig = signed.signatures[0];
+      if (!sig || sig.every((b: number) => b === 0)) {
+        throw new Error("Wallet returned empty signature");
+      }
 
-      return { ...transaction, signatures: updatedSignatures };
+      return {
+        ...transaction,
+        signatures: { ...transaction.signatures, [address]: sig },
+      };
     },
 
     async signTransactions(transactions: any[]) {
@@ -65,7 +69,7 @@ export async function getClient(
     rpcUrl: process.env.NEXT_PUBLIC_RPC_URL!,
     rpcSubscriptionsUrl: process.env.NEXT_PUBLIC_RPC_WS_URL!,
     indexerApiEndpoint: "https://utxo-indexer.api.umbraprivacy.com",
-    deferMasterSeedSignature: false,
+    deferMasterSeedSignature: true,
   });
   _signerAddress = address;
   _signTxRef = signTransaction;
