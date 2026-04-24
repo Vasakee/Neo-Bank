@@ -5,13 +5,13 @@ interface BankStore {
   shieldedBalances: Record<string, bigint>;
   pendingUtxos: any[];
   txHistory: { type: string; amount: bigint; mint: string; sig: string; ts: number }[];
-  // Card state (persisted to localStorage)
   cardId: string | null;
   cardStatus: "not_issued" | "active" | "frozen";
   cardLast4: string | null;
   cardExpiry: string | null;
   cardBalance: number;
   cardholderName: string | null;
+  _hydrated: boolean;
   setRegistered: (v: boolean) => void;
   setShieldedBalance: (mint: string, amount: bigint) => void;
   setPendingUtxos: (utxos: any[]) => void;
@@ -19,23 +19,37 @@ interface BankStore {
   setCard: (card: { cardId: string; last4: string; expiry: string; name: string }) => void;
   setCardStatus: (status: BankStore["cardStatus"]) => void;
   setCardBalance: (balance: number) => void;
+  hydrate: () => void;
 }
 
-function ls(key: string) {
-  return typeof window !== "undefined" ? localStorage.getItem(key) : null;
-}
-
+// Always start with defaults — rehydrate from localStorage client-side only
 export const useBankStore = create<BankStore>((set) => ({
-  registered: ls("ghostfi_registered") === "true",
+  registered: false,
   shieldedBalances: {},
   pendingUtxos: [],
   txHistory: [],
-  cardId: ls("cardId"),
-  cardStatus: (ls("cardStatus") as BankStore["cardStatus"]) ?? "not_issued",
-  cardLast4: ls("cardLast4"),
-  cardExpiry: ls("cardExpiry"),
-  cardBalance: Number(ls("cardBalance") ?? 0),
-  cardholderName: ls("cardholderName"),
+  cardId: null,
+  cardStatus: "not_issued",
+  cardLast4: null,
+  cardExpiry: null,
+  cardBalance: 0,
+  cardholderName: null,
+  _hydrated: false,
+
+  hydrate: () => {
+    if (typeof window === "undefined") return;
+    set({
+      registered: localStorage.getItem("ghostfi_registered") === "true",
+      cardId: localStorage.getItem("cardId"),
+      cardStatus: (localStorage.getItem("cardStatus") as BankStore["cardStatus"]) ?? "not_issued",
+      cardLast4: localStorage.getItem("cardLast4"),
+      cardExpiry: localStorage.getItem("cardExpiry"),
+      cardBalance: Number(localStorage.getItem("cardBalance") ?? 0),
+      cardholderName: localStorage.getItem("cardholderName"),
+      _hydrated: true,
+    });
+  },
+
   setRegistered: (registered) => {
     if (typeof window !== "undefined") localStorage.setItem("ghostfi_registered", String(registered));
     set({ registered });
