@@ -25,9 +25,9 @@ export default function Home() {
     <main className="min-h-screen flex flex-col items-center justify-center px-4 py-16 relative overflow-hidden">
 
       {/* Background rings */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-[600px] h-[600px] rounded-full border border-purple-500/5 animate-spin-slow" />
-        <div className="absolute w-[400px] h-[400px] rounded-full border border-purple-500/8 animate-spin-slow-reverse" />
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+        <div className="w-[min(600px,100vw)] h-[min(600px,100vw)] rounded-full border border-purple-500/5 animate-spin-slow" />
+        <div className="absolute w-[min(400px,80vw)] h-[min(400px,80vw)] rounded-full border border-purple-500/8 animate-spin-slow-reverse" />
       </div>
 
       {/* Hero */}

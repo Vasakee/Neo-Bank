@@ -13,10 +13,10 @@ export function GhostAnimation() {
   ];
 
   return (
-    <div className="relative flex items-center justify-center w-72 h-72 mx-auto select-none">
+    <div className="relative flex items-center justify-center w-56 h-56 sm:w-72 sm:h-72 mx-auto select-none overflow-hidden">
 
-      {/* Orbital rings */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      {/* Orbital rings — scaled down on mobile */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none scale-75 sm:scale-100">
         <svg className="ring-1 absolute" width="260" height="260" viewBox="0 0 260 260">
           <ellipse cx="130" cy="130" rx="120" ry="40" fill="none" stroke="url(#ring-grad-1)" strokeWidth="1" strokeDasharray="6 10" />
           <defs>
@@ -50,6 +50,7 @@ export function GhostAnimation() {
       </div>
 
       {/* Orbiting particles */}
+      <div className="absolute inset-0 scale-75 sm:scale-100">
       {particles.map((p, i) => (
         <div
           key={i}
@@ -73,9 +74,10 @@ export function GhostAnimation() {
           />
         </div>
       ))}
+      </div>
 
       {/* Ghost SVG */}
-      <div className="ghost-float relative z-10">
+      <div className="ghost-float relative z-10 scale-75 sm:scale-100">
         <svg width="120" height="140" viewBox="0 0 120 140" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <radialGradient id="ghost-body" cx="50%" cy="40%" r="60%">
