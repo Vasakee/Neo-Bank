@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
 import { Navbar } from "@/components/Navbar";
+import { TransactionsSkeleton } from "@/components/Skeletons";
 import { useBankStore } from "@/lib/store";
 import { rainClient } from "@/lib/rainClient";
 import { ShoppingBag, Utensils, Tv, ArrowUpRight, Zap, Search, ArrowDownLeft, ArrowUpRight as SendIcon, RefreshCw } from "lucide-react";
@@ -58,6 +59,9 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("All");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!cardId || cardStatus === "not_issued") return;
@@ -67,6 +71,8 @@ export default function TransactionsPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [cardId]);
+
+  if (!mounted) return <><Navbar /><TransactionsSkeleton /></>;
 
   const chainTxs: ChainTx[] = txHistory.map((t) => ({ ...t, source: "chain" }));
 
@@ -107,7 +113,7 @@ export default function TransactionsPage() {
   return (
     <>
       <Navbar />
-      <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+      <main className="max-w-2xl mx-auto px-4 py-8 space-y-6 pb-24 md:pb-8">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Transactions</h1>
           {loading && <RefreshCw size={16} className="animate-spin text-gray-500" />}

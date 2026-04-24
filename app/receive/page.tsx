@@ -1,12 +1,13 @@
 "use client";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Download, Copy, Check, Radar } from "lucide-react";
 import { getClient, SUPPORTED_TOKENS } from "@/lib/umbra";
 import { scanUtxos, claimUtxos } from "@/lib/actions";
 import { useBankStore } from "@/lib/store";
 import { Navbar } from "@/components/Navbar";
 import { ErrorModal } from "@/components/ErrorModal";
+import { ReceiveSkeleton } from "@/components/Skeletons";
 import { formatError } from "@/lib/errors";
 
 export default function ReceivePage() {
@@ -16,8 +17,13 @@ export default function ReceivePage() {
   const [claiming, setClaiming] = useState(false);
   const [copied, setCopied] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const address = publicKey?.toBase58() ?? "";
+
+  if (!mounted) return <><Navbar /><ReceiveSkeleton /></>;
 
   async function getClient_() {
     if (!publicKey || !signTransaction || !signMessage) throw new Error("Wallet not connected");
@@ -59,7 +65,7 @@ export default function ReceivePage() {
     <>
       <Navbar />
       {errorMsg && <ErrorModal error={errorMsg} onClose={() => setErrorMsg("")} />}
-      <main className="max-w-lg mx-auto px-4 py-8 space-y-5">
+      <main className="max-w-lg mx-auto px-4 py-8 space-y-5 pb-24 md:pb-8">
 
         {/* Header */}
         <div className="space-y-1">

@@ -8,6 +8,7 @@ import { getPusdQuote, buildPusdSwapTx, executePusdSwap } from "@/lib/pusd";
 import { useBankStore } from "@/lib/store";
 import { Navbar } from "@/components/Navbar";
 import { ErrorModal } from "@/components/ErrorModal";
+import { DashboardSkeleton } from "@/components/Skeletons";
 import { formatError } from "@/lib/errors";
 
 type Toast = { id: number; message: string; ok: boolean };
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [balanceHidden, setBalanceHidden] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const [swapFromMint, setSwapFromMint] = useState(SUPPORTED_TOKENS[0].mint);
   const [swapAmt, setSwapAmt] = useState("");
@@ -64,6 +66,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (localStorage.getItem("ghostfi_registered") === "true") setRegistered(true);
+    setMounted(true);
   }, []);
 
   useEffect(() => {
@@ -200,6 +203,14 @@ export default function Dashboard() {
     );
   }
 
+  if (!mounted) {
+    return (
+      <>
+        <Navbar />
+        <DashboardSkeleton />
+      </>
+    );
+  }
   return (
     <>
       <Navbar />
@@ -218,7 +229,7 @@ export default function Dashboard() {
 
       {errorMsg && <ErrorModal error={errorMsg} onClose={() => setErrorMsg("")} />}
 
-      <main className="max-w-2xl mx-auto px-4 py-8 space-y-5">
+      <main className="max-w-2xl mx-auto px-4 py-8 space-y-5 pb-24 md:pb-8">
 
         {/* Private Balance Card */}
         <div className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-purple-600/30 via-violet-600/20 to-transparent border border-purple-500/20">

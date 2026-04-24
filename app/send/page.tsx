@@ -1,12 +1,13 @@
 "use client";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useState } from "react";
-import { Send, Lock, ExternalLink, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Send, Lock, ExternalLink } from "lucide-react";
 import { getClient, SUPPORTED_TOKENS } from "@/lib/umbra";
 import { privateSend } from "@/lib/actions";
 import { useBankStore } from "@/lib/store";
 import { Navbar } from "@/components/Navbar";
 import { ErrorModal } from "@/components/ErrorModal";
+import { SendSkeleton } from "@/components/Skeletons";
 import { formatError } from "@/lib/errors";
 
 export default function SendPage() {
@@ -18,9 +19,14 @@ export default function SendPage() {
   const [loading, setLoading] = useState(false);
   const [txSig, setTxSig] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const token = SUPPORTED_TOKENS.find((t) => t.mint === mint)!;
   const privateBalance = Number(shieldedBalances[mint] ?? 0n) / 10 ** token.decimals;
+
+  if (!mounted) return <><Navbar /><SendSkeleton /></>;
 
   async function handleSend() {
     setLoading(true);
@@ -45,7 +51,7 @@ export default function SendPage() {
     <>
       <Navbar />
       {errorMsg && <ErrorModal error={errorMsg} onClose={() => setErrorMsg("")} />}
-      <main className="max-w-lg mx-auto px-4 py-8 space-y-5">
+      <main className="max-w-lg mx-auto px-4 py-8 space-y-5 pb-24 md:pb-8">
 
         {/* Header */}
         <div className="space-y-1">
