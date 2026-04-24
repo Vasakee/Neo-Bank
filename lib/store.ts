@@ -26,7 +26,7 @@ function ls(key: string) {
 }
 
 export const useBankStore = create<BankStore>((set) => ({
-  registered: false,
+  registered: ls("ghostfi_registered") === "true",
   shieldedBalances: {},
   pendingUtxos: [],
   txHistory: [],

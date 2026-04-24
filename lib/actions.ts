@@ -66,7 +66,7 @@ export async function privateSend(client: any, recipient: string, mint: string, 
 
 export async function scanUtxos(client: any) {
   const scan = getClaimableUtxoScannerFunction({ client });
-  const { received } = await call(scan, 0, 0);
+  const { received } = await call(scan, 0n, 0n);
   return received;
 }
 
