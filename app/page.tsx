@@ -30,12 +30,6 @@ export default function Home() {
   return (
     <main className="min-h-screen flex flex-col items-center px-4 pt-12 pb-20 relative overflow-hidden">
 
-      {/* Background rings */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-        <div className="w-[min(700px,100vw)] h-[min(700px,100vw)] rounded-full border border-purple-500/5 animate-spin-slow" />
-        <div className="absolute w-[min(450px,80vw)] h-[min(450px,80vw)] rounded-full border border-purple-500/8 animate-spin-slow-reverse" />
-      </div>
-
       {/* ── Hero ── */}
       <section className="flex flex-col items-center text-center max-w-xl w-full relative z-10">
 
